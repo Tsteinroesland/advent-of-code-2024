@@ -1,8 +1,6 @@
 (ns advent-of-code-2024.1
   (:require [clojure.string :refer [split]]))
 
-(defn get-input [])
-
 (->>
  (slurp "./resources/input1.txt")
  (#(split % #"\n"))
