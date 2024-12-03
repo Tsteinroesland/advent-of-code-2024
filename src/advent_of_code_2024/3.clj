@@ -1,6 +1,6 @@
 (ns advent-of-code-2024.3
   (:require
-   [clojure.string :refer [join split]]))
+   [clojure.string :refer [split]]))
 
 (defn multiply-expressions [input]
   (->> input
@@ -9,6 +9,7 @@
        (map (fn [x] [(parse-long (subs (first x) 4)) (parse-long (subs (last x) 0 (dec (count (last x)))))]))
        (map #(* (first %) (last %)))
        (reduce +)))
+
 (->>
  (slurp "resources/input3.txt")
  (#(split % #"\n"))
@@ -16,28 +17,26 @@
  (reduce +))
 
 ; ----- Part 2 ------
+; -- Without transducer
+(->>
+ (slurp "resources/input3.txt")
+ (str "do()")
+ (#(split % #"don't\(\)"))
+ (map #(split % #"do\(\)"))
+ (map #(rest %))
+ (filter #(seq %))
+ (map #(map multiply-expressions %))
+ (map #(reduce + %))
+ (reduce +))
+
 (def my-transducer (comp
                     (map #(split % #"do\(\)"))
                     (map #(rest %))
                     (filter #(seq %))
                     (map #(map multiply-expressions %))
                     (map #(reduce + %))))
-
-(time
- (->>
-  (slurp "resources/input3.txt")
-  (str "do()")
-  (#(split % #"don't\(\)"))
-  (map #(split % #"do\(\)"))
-  (map #(rest %))
-  (filter #(seq %))
-  (map #(map multiply-expressions %))
-  (map #(reduce + %))
-  (reduce +)))
-
-(time
- (->>
-  (slurp "resources/input3.txt")
-  (str "do()")
-  (#(split % #"don't\(\)"))
-  (transduce my-transducer +)))
+(->>
+ (slurp "resources/input3.txt")
+ (str "do()")
+ (#(split % #"don't\(\)"))
+ (transduce my-transducer +))
