@@ -52,7 +52,7 @@
                             [idx y-idx]))
                         row)))
 
-       (map #(map (fn [x] ((partial has-diagonal-xmas? matrix) x)) %))
+       (map #(map (fn [x] (has-diagonal-xmas? matrix x)) %))
        (map #(filter true? %))
        (filter not-empty)
        (map count)
@@ -84,6 +84,7 @@
 
 (defn has-surrounding-x-mas-2? [[x y]]
   (let [patterns ["MSMS", "SMSM" "SMMS", "MSSM"]]
+
     (->> patterns
          (map #(test-pattern % x y))
          (some true?))))
@@ -100,9 +101,3 @@
      (map #(filter true? %))
      (map count)
      (reduce +))
-
-
-
-
-
-

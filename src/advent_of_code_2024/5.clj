@@ -1,6 +1,6 @@
 (ns advent-of-code-2024.5
   (:require
-   [clojure.string :refer [split]]))
+   [clojure.string :refer [split split-lines]]))
 
 (def input
   (->>
@@ -10,22 +10,17 @@
 (def rules
   (->>
    (first input)
-   (#(split % #"\n"))
+   (split-lines)
    (map #(split % #"\|"))
    (map #(map parse-long %))))
 
 (def updates
   (->>
    (second input)
-   (#(split % #"\n"))
+   (split-lines)
    (map #(map parse-long (split % #",")))))
 
-(defn get-lhs-rules [number rules]
-  (->> rules
-       (filter #(= number (first %)))
-       (map second)))
-
-(defn get-rhs-rules [number rules]
+(defn get-rhs-of-rules [number rules]
   (->> rules
        (filter #(= number (second %)))
        (map first)))
@@ -33,26 +28,45 @@
 (defn validate-update [rules update']
   (->> update'
        (map-indexed (fn [idx x]
-                      (let [lhs-rules (get-lhs-rules x rules)
-                            rhs-rules (get-rhs-rules x rules)
-                            prior-numbers (take idx update')
+                      (let [rhs-rules (get-rhs-of-rules x rules)
                             later-numbers (drop (inc idx) update')]
-                           ;Does any of the prior numbers contain 
-                           ;[97 46] means 46 should not appear after the current number (97) 
-                           ;lhs contains all these numbers
-                        (not
-                         (or
-                          (some #(contains? (set prior-numbers) %) lhs-rules)
-                          (some #(contains? (set later-numbers) %) rhs-rules))))))
+                        (not (some #(contains? (set later-numbers) %) rhs-rules)))))
        (#(not (some false? %)))))
 
 (defn find-middle-num [arg]
   (get (vec arg) (/ (dec (count arg)) 2)))
 
 (->> updates
-     (map #(and ((partial validate-update rules) %) %))
+     (map #(and (validate-update rules %) %))
      (filter seq?)
      (map find-middle-num)
      (reduce +))
+
 ;---- PART 2 ----
+(defn find-collison [update' rule-index rule]
+  (->
+   (keep-indexed (fn [update-idx x]
+                   (if (= x rule)
+                     [rule-index update-idx]
+                     nil))
+                 update')
+   (first)))
+
+(defn fix-update [update' indices index]
+  (let [stuff-to-move (map (partial get (vec update')) indices)
+        prior-numbers (take index update')
+        later-numbers (drop (inc index) update')]
+    (concat prior-numbers stuff-to-move [(get (vec update') index)] (drop (inc (count stuff-to-move)) later-numbers))))
+
+
+
+
+
+
+
+
+
+
+
+
 
