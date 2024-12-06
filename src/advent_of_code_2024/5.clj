@@ -73,6 +73,6 @@
 
 (->> updates
      (map #(or (validate-update rules %) %))
-     (filter #(not (true? %))))
-     ; (map (partial fix-and-find-middle-num rules)) 
-     ; (reduce +)) 
+     (filter #(not (true? %)))
+     (map (partial fix-and-find-middle-num rules))
+     (reduce +))
