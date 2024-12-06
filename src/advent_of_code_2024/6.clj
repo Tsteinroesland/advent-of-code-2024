@@ -4,7 +4,7 @@
 
 (def input
   (->>
-   (slurp "resources/input6.txt")
+   (slurp "resources/testinput6.txt")
    (split-lines)))
 
 (defn determine-initial-position-and-direction [lines]
@@ -26,10 +26,10 @@
 
 (defn increment-position [[x y] direction]
   (cond
-    (= direction :up) [[x (dec y)] :up]
-    (= direction :down) [[x (inc y)] :down]
-    (= direction :left) [[(dec x) y] :left]
-    (= direction :right) [[(inc x) y] :right]))
+    (= direction :up) [x (dec y)]
+    (= direction :down) [x (inc y)]
+    (= direction :left) [(dec x) y]
+    (= direction :right) [(inc x) y]))
 
 (defn change-direction [dir]
   (cond
@@ -46,7 +46,7 @@
 
 (defn move-guard [[x y] direction]
   (loop [pos [x y] direction direction]
-    (let [[new-pos _] (increment-position pos direction)]
+    (let [new-pos (increment-position pos direction)]
       (if (check-for-collision new-pos)
         (recur pos (change-direction direction))
         [new-pos direction]))))
@@ -76,3 +76,27 @@
  (count))
 
 ;--- PART 2  ---
+(defn move-guard-2 [[x y] direction]
+  (loop [pos [x y] direction direction crashes '()]
+    (let [new-pos (increment-position pos direction)]
+      (if (check-for-collision new-pos)
+        (recur pos (change-direction direction) (cons crashes [new-pos direction :crash]))
+        [new-pos direction crashes]))))
+
+(defn is-looping [positions]
+  (apply distinct? positions))
+
+(defn determine-positions-2 [input]
+  (loop [[pos dir] (determine-initial-position-and-direction input)
+         positions (seq [[pos dir]])
+         crashes '()]
+    (let [[new-pos new-dir crashes] (move-guard-2 pos dir)]
+      (if (is-valid-position new-pos input)
+        (recur [new-pos new-dir] (cons [new-pos new-dir] positions) crashes)
+        [positions crashes]))))
+
+(->>
+ (determine-positions-2 input))
+ ; (map first)
+ ; (set)
+ ; (count))
