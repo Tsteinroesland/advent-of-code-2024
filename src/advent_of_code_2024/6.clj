@@ -4,7 +4,7 @@
 
 (def input
   (->>
-   (slurp "resources/testinput6.txt")
+   (slurp "resources/input6.txt")
    (split-lines)))
 
 (defn determine-initial-position-and-direction [lines]
@@ -25,11 +25,12 @@
            (= (second %) % \<) [(first %) :left]))))
 
 (defn increment-position [[x y] direction]
-  (cond
-    (= direction :up) [x (dec y)]
-    (= direction :down) [x (inc y)]
-    (= direction :left) [(dec x) y]
-    (= direction :right) [(inc x) y]))
+  (->
+   (cond
+     (= direction :up) [x (dec y)]
+     (= direction :down) [x (inc y)]
+     (= direction :left) [(dec x) y]
+     (= direction :right) [(inc x) y])))
 
 (defn change-direction [dir]
   (cond
@@ -38,22 +39,18 @@
     (= dir :down) :left
     (= dir :left) :up))
 
-(defn check-for-collision [[x y]]
+(defn check-for-collision [[x y] input]
   (-> input
       (get y)
       (get x)
       (#(= \# %))))
 
-(defn move-guard [[x y] direction]
+(defn move-guard [[x y] direction input]
   (loop [pos [x y] direction direction]
     (let [new-pos (increment-position pos direction)]
-      (if (check-for-collision new-pos)
+      (if (check-for-collision new-pos input)
         (recur pos (change-direction direction))
         [new-pos direction]))))
-
-(->
- (increment-position [4 1] :up)
- (#(check-for-collision (first %))))
 
 (defn is-valid-position [[x y] input]
   (-> input
@@ -64,11 +61,12 @@
 (defn determine-positions [input]
   (loop [[pos dir] (determine-initial-position-and-direction input)
          positions (seq [[pos dir]])]
-    (let [[new-pos new-dir] (move-guard pos dir)]
+    (let [[new-pos new-dir] (move-guard pos dir input)]
       (if (is-valid-position new-pos input)
         (recur [new-pos new-dir] (cons [new-pos new-dir] positions))
         positions))))
 
+; -- SOLUTION 1 --
 (->>
  (determine-positions input)
  (map first)
@@ -76,27 +74,63 @@
  (count))
 
 ;--- PART 2  ---
-(defn move-guard-2 [[x y] direction]
-  (loop [pos [x y] direction direction crashes '()]
+(def initial-pos-and-dir (determine-initial-position-and-direction input))
+
+(defn is-looping [crashes]
+  (->
+   (apply distinct? crashes)
+   (not)))
+
+(defn move-guard-2 [[x y] direction input crashes]
+  (loop [pos [x y] direction direction crashes crashes]
     (let [new-pos (increment-position pos direction)]
-      (if (check-for-collision new-pos)
-        (recur pos (change-direction direction) (cons crashes [new-pos direction :crash]))
+      (if (check-for-collision new-pos input)
+        (let [new-crashes (cons [[new-pos direction]] crashes)]
+          (if (is-looping new-crashes)
+            [nil nil new-crashes]
+            (recur pos (change-direction direction) new-crashes)))
         [new-pos direction crashes]))))
 
-(defn is-looping [positions]
-  (apply distinct? positions))
-
-(defn determine-positions-2 [input]
-  (loop [[pos dir] (determine-initial-position-and-direction input)
-         positions (seq [[pos dir]])
+(defn is-valid-map [input]
+  (loop [[pos dir] initial-pos-and-dir index 0
          crashes '()]
-    (let [[new-pos new-dir crashes] (move-guard-2 pos dir)]
-      (if (is-valid-position new-pos input)
-        (recur [new-pos new-dir] (cons [new-pos new-dir] positions) crashes)
-        [positions crashes]))))
+    (let [[new-pos new-dir new-crashes] (move-guard-2 pos dir input crashes)]
+      (cond
+        (nil? new-dir)
+        [:looping input]
 
-(->>
- (determine-positions-2 input))
- ; (map first)
- ; (set)
- ; (count))
+        (> index 10000)
+        :looping-500
+
+        (is-valid-position new-pos input)
+        (recur [(increment-position pos new-dir) new-dir] (inc index) new-crashes)
+
+        :else [true input]))))
+
+(defn replace-at [s idx replacement]
+  (str (subs s 0 idx) replacement (subs s (inc idx))))
+
+(def initial-path
+  (->> input
+       (determine-positions)
+       (map #(first %))
+       (drop-last)
+       (set)
+       (vec)))
+
+(defn replace-matrix [input [x y]]
+  (update-in input [y] (fn [_] (-> input
+                                   (get y)
+                                   (#(replace-at % x \#))))))
+
+(->> initial-path
+     (map (partial replace-matrix input))
+     (map is-valid-map)
+     (filter #(not (true? (first %))))
+     (count))
+
+(->> initial-path
+     (second)
+     (replace-matrix input)
+     (is-valid-map))
+

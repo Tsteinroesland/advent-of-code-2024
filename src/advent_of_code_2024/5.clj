@@ -76,3 +76,8 @@
      (filter #(not (true? %)))
      (map (partial fix-and-find-middle-num rules))
      (reduce +))
+
+(defn replace-at [s idx replacement]
+  (str (subs s 0 idx) replacement (subs s (inc idx)))) ()
+
+
