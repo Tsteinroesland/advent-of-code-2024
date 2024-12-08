@@ -17,8 +17,7 @@
 
 (defn next-numbers [calculated-numbers new-number]
   (->> calculated-numbers
-       (map (partial generate-next-numbers new-number))
-       (apply concat)))
+       (mapcat (partial generate-next-numbers new-number))))
 
 (defn expression-builder [numbers]
   (loop [variants (seq [(first numbers)])
