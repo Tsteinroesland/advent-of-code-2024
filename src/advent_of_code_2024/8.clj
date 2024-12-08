@@ -24,8 +24,6 @@
   (->>
    (indexed-input input)
    (group-by #(second %))))
-   ; (map (fn [group] (second group)))))
-   ; (map (fn [group] (map first group)))))
 
 (defn create-antinodes [[x1 y1] [x2 y2]]
   (if (= [x1 y1] [x2 y2])
@@ -43,7 +41,12 @@ unique-antennas
 (->> unique-antennas
      (map second)
      (map antinode-pairs)
-     (map (fn [x] (apply concat x))))
+     (map (fn [x] (apply concat x)))
+     (map (fn [x] (apply concat x)))
+     (map (fn [li] (filter #(every? pos? %) li)))
+     (map (fn [li] (filter #(every? (fn [x] (< x (dec input-height))) %) li)))
+     (map count)
+     (reduce +))
      ; (map (fn [y] (filter #(every? (pos? %) y))))) 
      ; (map (fn [x] #(map set %)x))) 
      ; (map (fn [group] (map (fn [group-content] (antinode-pairs group-content)) group))))
@@ -55,15 +58,6 @@ unique-antennas
      ; (filter #(every? pos? %))
      ; (filter #(every? (fn [x] (< x (dec input-height))) %))
      ; (count))
-
-(create-antinodes [5 6] [8 8])
-
-(->>
- (antinode-pairs [[[6 5] \a] [[8 8] \a]])
- (apply concat)
- (apply concat)
- (set))
-
 
 
 
