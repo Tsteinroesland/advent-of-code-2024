@@ -97,15 +97,13 @@
     (let [[new-pos new-dir new-crashes] (move-guard-2 pos dir input crashes)]
       (cond
         (nil? new-dir)
-        [:looping input]
-
-        (> index 10000)
-        :looping-500
+        :looping
 
         (is-valid-position new-pos input)
         (recur [(increment-position pos new-dir) new-dir] (inc index) new-crashes)
 
-        :else [true input]))))
+        :else
+        true))))
 
 (defn replace-at [s idx replacement]
   (str (subs s 0 idx) replacement (subs s (inc idx))))
@@ -123,14 +121,9 @@
                                    (get y)
                                    (#(replace-at % x \#))))))
 
-(->> initial-path
-     (map (partial replace-matrix input))
-     (map is-valid-map)
-     (filter #(not (true? (first %))))
-     (count))
-
-(->> initial-path
-     (second)
-     (replace-matrix input)
-     (is-valid-map))
-
+(time
+ (->> initial-path
+      (map (partial replace-matrix input))
+      (map is-valid-map)
+      (frequencies)
+      (#(get % :looping))))
