@@ -120,6 +120,6 @@
 (time
  (->> initial-path
       (map (partial replace-matrix input))
-      (map is-valid-map)
+      (pmap is-valid-map)
       (frequencies)
       (#(get % :looping))))
