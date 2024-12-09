@@ -76,31 +76,29 @@
 ;--- PART 2  ---
 (def initial-pos-and-dir (determine-initial-position-and-direction input))
 
-(defn is-looping [crashes]
-  (->
-   (apply distinct? crashes)
-   (not)))
+(defn is-looping [crashes key']
+  (contains? crashes key'))
 
 (defn move-guard-2 [[x y] direction input crashes]
   (loop [pos [x y] direction direction crashes crashes]
     (let [new-pos (increment-position pos direction)]
       (if (check-for-collision new-pos input)
-        (let [new-crashes (cons [[new-pos direction]] crashes)]
-          (if (is-looping new-crashes)
+        (let [new-crashes (conj crashes [new-pos direction])]
+          (if (is-looping crashes [new-pos direction])
             [nil nil new-crashes]
             (recur pos (change-direction direction) new-crashes)))
         [new-pos direction crashes]))))
 
 (defn is-valid-map [input]
-  (loop [[pos dir] initial-pos-and-dir index 0
-         crashes '()]
+  (loop [[pos dir] initial-pos-and-dir
+         crashes #{}]
     (let [[new-pos new-dir new-crashes] (move-guard-2 pos dir input crashes)]
       (cond
         (nil? new-dir)
         :looping
 
         (is-valid-position new-pos input)
-        (recur [(increment-position pos new-dir) new-dir] (inc index) new-crashes)
+        (recur [(increment-position pos new-dir) new-dir] new-crashes)
 
         :else
         true))))
@@ -117,9 +115,7 @@
        (vec)))
 
 (defn replace-matrix [input [x y]]
-  (update-in input [y] (fn [_] (-> input
-                                   (get y)
-                                   (#(replace-at % x \#))))))
+  (update-in input [y] #(replace-at % x \#)))
 
 (time
  (->> initial-path

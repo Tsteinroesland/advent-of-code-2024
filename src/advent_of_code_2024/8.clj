@@ -4,7 +4,7 @@
 
 (def input
   (->
-   (slurp "resources/testinput8.txt")
+   (slurp "resources/input8.txt")
    (split-lines)))
 
 (defn indexed-input [input]
@@ -20,7 +20,7 @@
 
 (def input-height (count input))
 
-(def unique-antennas
+(def unique-antenna-groups
   (->>
    (indexed-input input)
    (group-by #(second %))))
@@ -28,36 +28,41 @@
 (defn create-antinodes [[x1 y1] [x2 y2]]
   (if (= [x1 y1] [x2 y2])
     nil
-    [[(- x1 (- x2 x1)) (- y1 (- y2 y1))]
-     [(+ x2 (- x2 x1)) (+ y2 (- y2 y1))]]))
+    (let [anti-nodes [[(- x1 (- x2 x1)) (- y1 (- y2 y1))]
+                      [(+ x2 (- x2 x1)) (+ y2 (- y2 y1))]]
+          non-negative-nodes (filter #(not (some neg? %)) anti-nodes)
+          valid-nodes (filter #(not (some (fn [x] (> x (dec input-height))) %)) non-negative-nodes)]
 
-(defn antinode-pairs [antennas]
-  (->> antennas
-       (map (fn [[a1 _]]
-              (keep (fn [[a2 _]] (create-antinodes a1 a2))
-                    antennas)))))
+      (if (> (count valid-nodes) 0)
+        valid-nodes
+        nil))))
 
-unique-antennas
-(->> unique-antennas
-     (map second)
-     (map antinode-pairs)
-     (map (fn [x] (apply concat x)))
-     (map (fn [x] (apply concat x)))
-     (map (fn [li] (filter #(every? pos? %) li)))
-     (map (fn [li] (filter #(every? (fn [x] (< x (dec input-height))) %) li)))
-     (map count)
-     (reduce +))
-     ; (map (fn [y] (filter #(every? (pos? %) y))))) 
-     ; (map (fn [x] #(map set %)x))) 
-     ; (map (fn [group] (map (fn [group-content] (antinode-pairs group-content)) group))))
-     ; (mapcat set))
-     ; (apply concat)
-     ; (apply concat)
-     ; (apply concat)
-     ; ; (set)
-     ; (filter #(every? pos? %))
-     ; (filter #(every? (fn [x] (< x (dec input-height))) %))
-     ; (count))
+(defn antinode-pairs [antenna-group]
+  (let [body (second antenna-group)]
+    (->>
+     (map (fn [[a1 _]]
+            (keep (fn [[a2 _]] (create-antinodes a1 a2))
+                  body))
+          body)
+     (apply concat)
+     (apply concat))))
 
+(->>
+ (map antinode-pairs unique-antenna-groups)
+ (apply concat)
+ (set)
+ (count))
 
+;-------- PART 2 ---------
 
+(defn create-antinodes-2 [[x1 y1] [x2 y2]]
+  (if (= [x1 y1] [x2 y2])
+    nil
+    (let [anti-nodes [[(- x1 (- x2 x1)) (- y1 (- y2 y1))]
+                      [(+ x2 (- x2 x1)) (+ y2 (- y2 y1))]]
+          non-negative-nodes (filter #(not (some neg? %)) anti-nodes)
+          valid-nodes (filter #(not (some (fn [x] (> x (dec input-height))) %)) non-negative-nodes)]
+
+      (if (> (count valid-nodes) 0)
+        valid-nodes
+        nil))))
