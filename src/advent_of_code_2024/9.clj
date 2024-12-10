@@ -1,11 +1,10 @@
 (ns advent-of-code-2024.9
   (:require
-   [clojure.spec.alpha :refer [conform]]
    [clojure.string :refer [split-lines]]))
 
 (def input
   (->
-   (slurp "resources/testinput9.txt")
+   (slurp "resources/input9.txt")
    (split-lines)
    (first)))
 
@@ -45,6 +44,7 @@
 (def moves (- (count (first free-used-spaces)) (find-skips disk free-used-spaces)))
 
 (defn do-swap [current to-index from-index]
+  (assert (< to-index from-index))
   (-> current
       (update-in [to-index] (fn [_] (get disk from-index)))
       (update-in [from-index] (fn [_] \.))))
@@ -74,33 +74,10 @@
   (reduce +)))
 
 ; ---- PART 2 ----
-
-(def indexed-and-partitioned-disk
+(def indexed-disk
   (->> disk
        (map-indexed (fn [idx x] [idx x]))))
-       ; (partition-by (fn [x] (second x)))))
 
-indexed-and-partitioned-disk
-(split-with (fn [x] (not= (second x) \.)) indexed-and-partitioned-disk)
-
-(defn split-files [ls]
-  (split-with (fn [x] (not= (second x) \.)) ls))
-
-(defn split-memory [ls]
-  (split-with (fn [x] (not (number? (second x)))) ls))
-
-(def grouped-segments
-  (->
-   (loop [list' indexed-and-partitioned-disk memory [] files [] toggle :file]
-     (let [[new-elements remaining-list] (if (= toggle :file) (split-files list') (split-memory list'))
-           memory (if (= toggle :file) memory (into memory  new-elements))
-           files (if (not= toggle :file) files (into files new-elements))]
-       (if (empty? remaining-list)
-         [memory files]
-         (recur remaining-list memory files (if (= toggle :file) :memory :file)))))))
-
-;Should verify preemptively that file will fit in memory
-indexed-and-partitioned-disk
 ; Expects a list of tuples sorted by idx [idx value]
 (defn chunk-by-index [ls]
   (loop [remaining-ls (rest ls)
@@ -116,31 +93,58 @@ indexed-and-partitioned-disk
           (recur (rest remaining-ls) chunks (conj curr-chunk (first remaining-ls)) (first remaining-ls)))))))
 
 (def file-segments
-  (->>
-   (chunk-by-index (->> indexed-and-partitioned-disk
-                        (sort-by #(= \. (second %)))
-                        (split-with #(not= \. (second %)))
-                        (first)))
-   (reverse)))
+  (->> indexed-disk
+       (filter #(not= \. (second %)))
+       (chunk-by-index)
+       (reverse)))
 
-file-segments
+(def memory-segments
+  (->> indexed-disk
+       (filter #(= \. (second %)))
+       (chunk-by-index)))
 
-(def memory-segments (chunk-by-index (->> indexed-and-partitioned-disk
-                                          (sort-by #(= \. (second %)))
-                                          (split-with #(not= \. (second %)))
-                                          (second))))
-
-memory-segments
-
-(defn move-file [memory-segment file-segment disk]
-  (loop [mem memory-segment file file-segment disk disk]
-    (if (empty? file-segment)
+(defn move-file [mem file disk]
+  (loop [mem  mem
+         file file
+         disk disk]
+    (if (empty? file)
       disk
-      (let [[mem-index _] (first mem)
-            [file-index _] (first file)]
-        (println "Mem index: " mem-index "File index: " file-index)
+      (recur (rest mem) (rest file) (do-swap disk (ffirst mem) (ffirst file))))))
 
-        (recur (rest mem) (rest file) (do-swap disk mem-index file-index))))))
+(defn move-files [memory-segment file-segments disk]
+  (loop [remaining-memory memory-segment remaining-files file-segments disk disk index 0]
+    (if (> index 100000)
+      :index-100
+      (if (empty? remaining-files)
+        disk
+        (let [file (first remaining-files)
+              [idx first-fitting-memory] (some
+                                          (fn [seg]
+                                            (and (>= (count (second seg)) (count file)) seg))
+                                          (map-indexed (fn [idx seg] [idx seg])
+                                                       remaining-memory))]
 
-(move-file (first memory-segments) (first file-segments) disk)
+          (if (and first-fitting-memory (> (ffirst file) (ffirst first-fitting-memory)))
+            (recur
+             (update-in remaining-memory [idx] (fn [x] (drop (count file) x)))
+             (rest remaining-files)
+             (move-file first-fitting-memory file disk)
+             (inc index))
+            (recur
+             remaining-memory
+             (rest remaining-files)
+             disk
+             (inc index))))))))
 
+(time
+ (->>
+  (move-files memory-segments file-segments disk)
+  (map-indexed (fn [idx x] (if (= \. x)
+                             0
+                             (* idx x))))
+  (reduce +)))
+
+  ; Comments of shame:
+  ; WRONG Answer: 8560280238594
+  ; NEW WRONG answer: 18197840409450  
+  ; POTENTIAL NEW ANSWER: 6390781891880 
