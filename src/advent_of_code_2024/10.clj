@@ -18,7 +18,7 @@
        (apply concat)))
 
 (def directions [[-1 0] [0 1] [1 0] [0 -1]])
-(defn add [[a b] [c d]]
+(defn add-direction [[a b] [c d]]
   [(+ a c) (+ b d)])
 
 (defn is-on-map? [[y x]]
@@ -28,11 +28,10 @@
        (>= x 0)))
 
 (defn get-next-steps [coord]
-  (let [potential-dirs (->> (map #(add coord %) directions)
-                            (filter is-on-map?))
-        current-height (get-in input coord)
-        valid-dirs (->> potential-dirs (filter (fn [dir] (= 1 (- (get-in input dir) current-height)))))]
-    valid-dirs))
+  (let [new-dirs (->> (map #(add-direction coord %) directions)
+                      (filter is-on-map?)
+                      (filter (fn [dir] (= 1 (- (get-in input dir) (get-in input coord))))))]
+    new-dirs))
 
 (defn is-a-nine? [coord]
   (= 9 (get-in input coord)))
@@ -53,14 +52,12 @@
 ; ------- PART 2 --------
 (defn get-next-steps-2 [path]
   (let [coord (last path)
-        potential-dirs (->> (map #(add coord %) directions)
-                            (filter is-on-map?))
-        current-height (get-in input coord)
-        valid-dirs (->> potential-dirs
-                        (filter (fn [dir] (= 1 (- (get-in input dir) current-height)))))]
-    (->> valid-dirs (map (fn [dir] (conj path dir))))))
+        new-dirs (->> (map #(add-direction coord %) directions)
+                      (filter is-on-map?)
+                      (filter (fn [dir] (= 1 (- (get-in input dir) (get-in input coord))))))]
+    (->> new-dirs (map (fn [dir] (conj path dir))))))
 
-(defn is-a-nine?-2 [path]
+(defn is-a-nine-2? [path]
   (let [coord (last path)]
     (= 9 (get-in input coord))))
 
@@ -69,7 +66,7 @@
          paths [[trail-head]]]
     (if (empty? paths)
       (count nines)
-      (recur (into nines (filter is-a-nine?-2 paths))
+      (recur (into nines (filter is-a-nine-2? paths))
              (mapcat get-next-steps-2 paths)))))
 
 (->> trailhead-coords
