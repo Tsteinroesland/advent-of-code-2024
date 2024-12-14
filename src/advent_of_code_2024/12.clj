@@ -118,7 +118,7 @@
 
 (defn region-to-fp [f region]
   (->> region
-       (group-by second)
+       (group-by f)
        (map second)))
 
 (defn create-horizontal-sides [direction flower-patch]
