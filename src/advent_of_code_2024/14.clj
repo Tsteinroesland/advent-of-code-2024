@@ -58,3 +58,9 @@
      (apply *))
 
 ; ---- PART 2 ----
+(defn detect-christmas-tree [robots]
+  ());do something smart)
+
+(->> robots
+     (map (partial iterate move-robot))
+     (map (partial take 101)))
