@@ -2,8 +2,6 @@
   (:require
    [clojure.string :refer [split-lines]]))
 
-; (def input (slurp "resources/input14.txt"))
-
 (def robots
   (->>
    (slurp "resources/input14.txt")
@@ -12,6 +10,7 @@
    (map (partial drop 1))
    (map (fn [ls] (map parse-long ls)))))
 
+; -- CHANGE THIS IF TESTING TEST INPUT! --
 ; (def width 11)
 ; (def height 7)
 (def width 101)
@@ -57,3 +56,5 @@
      (map second)
      (map count)
      (apply *))
+
+; ---- PART 2 ----
