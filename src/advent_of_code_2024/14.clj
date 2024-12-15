@@ -1,6 +1,6 @@
 (ns advent-of-code-2024.14
   (:require
-   [clojure.string :refer [split-lines]]))
+   [clojure.string :refer [join split-lines]]))
 
 (def robots
   (->>
@@ -58,9 +58,37 @@
      (apply *))
 
 ; ---- PART 2 ----
-(defn detect-christmas-tree [robots]
-  ());do something smart)
 
-(->> robots
-     (map (partial iterate move-robot))
-     (map (partial take 101)))
+(defn move-robots [robots]
+  (mapv move-robot robots))
+
+(def empty-map
+  (->
+   (vec (repeat height (vec (repeat width \.))))))
+
+(defn visualize-robots [robots]
+  (->> robots
+       (mapv (fn [[x y _ _]] [y x]))
+       (reduce (fn [map' robot] (update-in map' robot (fn [_] \x))) empty-map)
+       (mapv join)))
+
+(defn is-xmas-tree [robots]
+  (let [grouped-by-x (map second (group-by first robots))
+        grouped-by-y (map second (group-by second robots))]
+    (and
+     (some (fn [x] (> (count x) 20)) grouped-by-x)
+     (some (fn [x] (> (count x) 20)) grouped-by-y))))
+
+(time
+ (->>
+  (iterate move-robots robots)
+  (reduce (fn [acc x] (if (is-xmas-tree x)
+                        (reduced acc)
+                        (inc acc))) 0)))
+
+; (time
+;  (->>
+;   (iterate move-robots robots)
+;   (drop-while #(not (is-xmas-tree %)))
+;   (first)
+;   (visualize-robots)))
